@@ -16,6 +16,10 @@
   <img src="img/demo-screen.png" alt="demo" width="100%">
 </p>
 
+<p align="center">
+  <img src="img/demo-screen-release.png" alt="demo-release" width="100%">
+</p>
+
 ## Структура
 
 ```

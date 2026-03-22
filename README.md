@@ -11,6 +11,11 @@
 - Прогресс сохраняется при перезагрузке страницы (фоновый поток на бэкенде)
 - Данные кешируются в файл `backend/data/deployments.json`
 
+
+<p align="center">
+  <img src="img/demo-screen.png" alt="demo" width="100%">
+</p>
+
 ## Структура
 
 ```

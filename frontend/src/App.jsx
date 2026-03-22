@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Sidebar from "./components/Sidebar.jsx";
 import DeploymentsTable from "./components/DeploymentsTable.jsx";
+import ReleasesView from "./components/ReleasesView.jsx";
 import {
   fetchEnvironments,
   fetchDeployments,
@@ -9,6 +10,22 @@ import {
   startRefreshAll,
   startRefreshEnv,
 } from "./api.js";
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function loadReleasesFromStorage() {
+  try {
+    return JSON.parse(localStorage.getItem("gl_releases") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveReleasesToStorage(releases) {
+  localStorage.setItem("gl_releases", JSON.stringify(releases));
+}
 
 const styles = {
   app: { display: "flex", flexDirection: "column", height: "100vh" },
@@ -50,6 +67,10 @@ export default function App() {
   const [anyRunning, setAnyRunning] = useState(false);
 
   const [error, setError] = useState(null);
+
+  // releases
+  const [releases, setReleases] = useState(loadReleasesFromStorage);
+  const [selectedRelease, setSelectedRelease] = useState(null);
 
   // keep selected in a ref so stream callbacks see the latest value
   const selectedRef = useRef(null);
@@ -154,8 +175,38 @@ export default function App() {
   }
 
   async function selectEnv(env) {
+    setSelectedRelease(null);
     setSelected(env);
     await loadDeployments(env);
+  }
+
+  // -------------------------------------------------------------------------
+  function handleNewRelease() {
+    const r = { id: uid(), name: "Новый релиз", envConfigs: [] };
+    const updated = [...releases, r];
+    setReleases(updated);
+    saveReleasesToStorage(updated);
+    setSelectedRelease(r.id);
+    setSelected(null);
+  }
+
+  function handleSelectRelease(id) {
+    setSelectedRelease(id);
+    setSelected(null);
+  }
+
+  function handleUpdateRelease(updated) {
+    const list = releases.map((r) => (r.id === updated.id ? updated : r));
+    setReleases(list);
+    saveReleasesToStorage(list);
+  }
+
+  function handleDeleteRelease(id) {
+    const list = releases.filter((r) => r.id !== id);
+    setReleases(list);
+    saveReleasesToStorage(list);
+    setSelectedRelease(null);
+    if (environments.length > 0) setSelected(environments[0]);
   }
 
   // -------------------------------------------------------------------------
@@ -205,15 +256,29 @@ export default function App() {
           onRefresh={handleRefreshAll}
           disabled={anyRunning}
           progress={refreshAllProgress}
+          releases={releases}
+          selectedRelease={selectedRelease}
+          onSelectRelease={handleSelectRelease}
+          onNewRelease={handleNewRelease}
         />
-        <DeploymentsTable
-          deployments={deployments}
-          loading={loadingDeps}
-          environment={selected}
-          onRefreshEnv={handleRefreshEnv}
-          disabled={anyRunning}
-          progress={refreshEnvProgress}
-        />
+        {selectedRelease ? (
+          <ReleasesView
+            key={selectedRelease}
+            release={releases.find((r) => r.id === selectedRelease)}
+            environments={environments}
+            onChange={handleUpdateRelease}
+            onDelete={() => handleDeleteRelease(selectedRelease)}
+          />
+        ) : (
+          <DeploymentsTable
+            deployments={deployments}
+            loading={loadingDeps}
+            environment={selected}
+            onRefreshEnv={handleRefreshEnv}
+            disabled={anyRunning}
+            progress={refreshEnvProgress}
+          />
+        )}
       </div>
     </div>
   );

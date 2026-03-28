@@ -12,6 +12,7 @@ from fastapi.responses import StreamingResponse
 load_dotenv()
 
 from gitlab_client import GitLabClient  # noqa: E402
+from jira_client import JiraClient  # noqa: E402
 
 app = FastAPI(title="GitLab Deployments Viewer")
 
@@ -240,6 +241,17 @@ def refresh_all():
          current=0, total=0, last_result=None, last_error=None)
     threading.Thread(target=_job_refresh_all, daemon=True).start()
     return {"status": "started"}
+
+
+@app.get("/api/jira/fix-versions")
+def jira_fix_versions():
+    try:
+        versions = JiraClient().fetch_fix_versions()
+        return {"versions": versions}
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Jira error: {e}")
 
 
 @app.post("/api/refresh-env")

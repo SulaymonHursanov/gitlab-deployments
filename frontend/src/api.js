@@ -43,3 +43,4 @@ export const fetchRefreshStatus = ()    => request("/api/refresh-status");
 export const refreshStream      = ()    => sseStream("/api/refresh-stream");
 export const startRefreshAll    = ()    => postJSON("/api/refresh");
 export const startRefreshEnv    = (env) => postJSON(`/api/refresh-env?environment=${encodeURIComponent(env)}`);
+export const fetchJiraVersions  = ()    => request("/api/jira/fix-versions");

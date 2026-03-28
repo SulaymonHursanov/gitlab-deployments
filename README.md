@@ -61,7 +61,7 @@ pip install -r requirements.txt
 cp .env.example .env
 # Заполни .env своими значениями
 
-uvicorn main:app --reload
+py -m uvicorn main:app --reload --port 8000
 # Сервер запустится на http://localhost:8000
 ```
 

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { fetchJiraVersions } from "../api.js";
 
 const styles = {
   sidebar: {
@@ -33,6 +34,54 @@ const styles = {
     padding: "0 2px",
     display: "flex",
     alignItems: "center",
+  },
+  jiraBtn: {
+    background: "transparent",
+    border: "none",
+    color: "#8b949e",
+    cursor: "pointer",
+    fontSize: 11,
+    lineHeight: 1,
+    padding: "0 2px",
+    display: "flex",
+    alignItems: "center",
+  },
+  jiraPanel: {
+    borderTop: "1px solid #21262d",
+    maxHeight: 220,
+    overflowY: "auto",
+    flexShrink: 0,
+  },
+  jiraItem: {
+    padding: "6px 14px",
+    cursor: "pointer",
+    fontSize: 12,
+    color: "#e6edf3",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    borderBottom: "1px solid #21262d22",
+  },
+  jiraItemReleased: {
+    color: "#484f58",
+  },
+  jiraBadge: (released) => ({
+    fontSize: 10,
+    padding: "1px 5px",
+    borderRadius: 3,
+    background: released ? "#21262d" : "#1f3a1f",
+    color: released ? "#484f58" : "#3fb950",
+    flexShrink: 0,
+  }),
+  jiraError: {
+    padding: "8px 14px",
+    fontSize: 12,
+    color: "#f85149",
+  },
+  jiraLoading: {
+    padding: "8px 14px",
+    fontSize: 12,
+    color: "#8b949e",
   },
   list: {
     flex: 1,
@@ -144,6 +193,35 @@ export default function Sidebar({
   onSelectRelease,
   onNewRelease,
 }) {
+  const [jiraOpen, setJiraOpen] = useState(false);
+  const [jiraVersions, setJiraVersions] = useState(null);
+  const [jiraLoading, setJiraLoading] = useState(false);
+  const [jiraError, setJiraError] = useState(null);
+
+  async function handleJiraToggle() {
+    if (jiraOpen) {
+      setJiraOpen(false);
+      return;
+    }
+    setJiraOpen(true);
+    if (jiraVersions !== null) return; // already loaded
+    setJiraLoading(true);
+    setJiraError(null);
+    try {
+      const data = await fetchJiraVersions();
+      setJiraVersions(data.versions);
+    } catch (e) {
+      setJiraError(e.message);
+    } finally {
+      setJiraLoading(false);
+    }
+  }
+
+  function handlePickVersion(v) {
+    onNewRelease(v.name);
+    setJiraOpen(false);
+  }
+
   return (
     <div style={styles.sidebar}>
       {/* Environments section */}
@@ -166,10 +244,48 @@ export default function Sidebar({
       {/* Releases section */}
       <div style={styles.sectionHeader}>
         <span>Releases</span>
-        <button style={styles.addBtn} onClick={onNewRelease} title="Новый релиз">
-          +
-        </button>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button
+            style={styles.jiraBtn}
+            onClick={handleJiraToggle}
+            title="Импортировать из Jira"
+          >
+            {jiraOpen ? "▲ Jira" : "▼ Jira"}
+          </button>
+          <button style={styles.addBtn} onClick={() => onNewRelease()} title="Новый релиз">
+            +
+          </button>
+        </div>
       </div>
+
+      {jiraOpen && (
+        <div style={styles.jiraPanel}>
+          {jiraLoading && <div style={styles.jiraLoading}>Загрузка…</div>}
+          {jiraError && <div style={styles.jiraError}>{jiraError}</div>}
+          {jiraVersions && jiraVersions.length === 0 && (
+            <div style={styles.jiraLoading}>Нет версий</div>
+          )}
+          {jiraVersions && jiraVersions.map((v) => (
+            <div
+              key={v.id}
+              style={{
+                ...styles.jiraItem,
+                ...(v.released ? styles.jiraItemReleased : {}),
+              }}
+              onClick={() => !v.released && handlePickVersion(v)}
+              title={v.description || v.name}
+            >
+              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {v.name}
+              </span>
+              <span style={styles.jiraBadge(v.released)}>
+                {v.released ? "released" : "open"}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div style={styles.releasesList}>
         {releases.length === 0 && (
           <div style={{ padding: "8px 14px", fontSize: 12, color: "#484f58" }}>

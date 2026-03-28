@@ -181,8 +181,8 @@ export default function App() {
   }
 
   // -------------------------------------------------------------------------
-  function handleNewRelease() {
-    const r = { id: uid(), name: "Новый релиз", envConfigs: [] };
+  function handleNewRelease(name = "Новый релиз") {
+    const r = { id: uid(), name, envConfigs: [] };
     const updated = [...releases, r];
     setReleases(updated);
     saveReleasesToStorage(updated);
